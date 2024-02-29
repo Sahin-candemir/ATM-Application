@@ -10,11 +10,17 @@ import com.patika.Atm.service.AccountService;
 import com.patika.Atm.service.TransactionService;
 import com.patika.Atm.service.UserService;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 public class TransactionServiceImpl implements TransactionService {
@@ -78,7 +84,14 @@ public class TransactionServiceImpl implements TransactionService {
             BigDecimal newBalance = accountDto.getBalance().add(transactionRequest.getAmount());
             UpdateAccountDto updateAccountDto = new UpdateAccountDto(newBalance);
             accountService.updateAccount(transactionRequest.getAccountId(), updateAccountDto);
-
+            Transaction transaction = Transaction.builder()
+                    .transactionType(TransactionType.DEPOSIT)
+                    .account(mapper.map(accountDto, Account.class))
+                    .amount(transactionRequest.getAmount())
+                    .transactionDate(LocalDateTime.now())
+                    .description("User with ID : "+ accountDto.getId() +" deposit "+transactionRequest.getAmount()+"TL from their account")
+                    .build();
+            transactionRepository.save(transaction);
             return TransactionResponse.builder()
                     .newBalance(newBalance)
                     .accountId(transactionRequest.getAccountId())
@@ -112,6 +125,14 @@ public class TransactionServiceImpl implements TransactionService {
                 UpdateAccountDto updateToAccountDto = new UpdateAccountDto(newToAccountBalance);
                 accountService.updateAccount(fromAccount.getId(), updateToAccountDto);
 
+                Transaction transaction = Transaction.builder()
+                        .transactionType(TransactionType.WITHDRAW)
+                        .account(mapper.map(fromAccount, Account.class))
+                        .amount(transferRequest.getAmount())
+                        .transactionDate(LocalDateTime.now())
+                        .description("User with ID : "+ fromAccount.getId() +" sent "+transferRequest.getAmount()+"TL to "+fromAccount.getId()+ " accounts with id")
+                        .build();
+                transactionRepository.save(transaction);
                 return TransactionResponse.builder()
                         .newBalance(newFromAccountBalance)
                         .accountId(transferRequest.getFromAccountId())
@@ -125,4 +146,26 @@ public class TransactionServiceImpl implements TransactionService {
             throw new ResourceNotFoundException("From Account ID or User ID mismatch");
         }
     }
+
+    @Override
+    public TransactionPageResponse getTransactionsByAccountId(Long accountId, int pageNo, int pageSize, String sortBy, String sortDir) {
+        Sort sort = sortDir.equalsIgnoreCase(Sort.Direction.ASC.name()) ? Sort.by(sortBy).ascending()
+                :Sort.by(sortBy).descending();
+        Pageable pageable = PageRequest.of(pageNo, pageSize, sort);
+        Page<Transaction> transactions = transactionRepository.findByAccountIdOrderByTransactionDateDesc(accountId,pageable);
+       List<TransactionDto> transactionDtoList = transactions.stream().map(transaction -> mapper.map(transaction, TransactionDto.class)).collect(Collectors.toList());
+        TransactionPageResponse transactionPageResponse = TransactionPageResponse.builder()
+                .transactionDtoList(transactionDtoList)
+                .pageNo(transactions.getNumber())
+                .pageSize(transactions.getSize())
+                .totalElements(transactions.getTotalElements())
+                .totalPages(transactions.getTotalPages())
+                .last(transactions.isLast())
+                .build();
+        return transactionPageResponse;
+    }
+
+
+
+
 }

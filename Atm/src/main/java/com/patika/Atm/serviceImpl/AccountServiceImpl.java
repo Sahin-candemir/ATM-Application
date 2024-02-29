@@ -66,4 +66,11 @@ public class AccountServiceImpl implements AccountService {
                 .balance(account.getBalance())
                 .build();
     }
+
+    @Override
+    public void deleteAccountById(Long id) {
+        Account account = accountRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Account not found with id: "+id));
+        accountRepository.delete(account);
+    }
 }

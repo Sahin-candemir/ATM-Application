@@ -35,5 +35,11 @@ public class AccountController {
     public ResponseEntity<AccountDto> updateAccount(@PathVariable Long id, @RequestBody UpdateAccountDto updateAccountDto){
         return new ResponseEntity<>(accountService.updateAccount(id, updateAccountDto), HttpStatus.OK);
     }
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteAccountById(@PathVariable Long id){
+        accountService.deleteAccountById(id);
+        return new ResponseEntity<>("Account deleted success", HttpStatus.OK);
+    }
 
 }
