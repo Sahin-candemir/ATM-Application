@@ -59,4 +59,4 @@ id  | amount | description | transaction_date | transaction_type |account_id|
 ## Swagger
 * Dokümantasyon için aşağıdaki adres kullanılmalıdır.
 * ``http://localhost:8080/swagger-ui/index.html``
-  ![swaggerr.png](swaggerr.png)
+  ![ATM_Swagger.png](ATM_Swagger.png)
