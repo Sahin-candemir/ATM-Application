@@ -3,6 +3,8 @@ package com.patika.Atm.serviceImpl;
 import com.patika.Atm.dto.*;
 import com.patika.Atm.exception.InsufficienciesException;
 import com.patika.Atm.exception.ResourceNotFoundException;
+import com.patika.Atm.model.Transaction;
+import com.patika.Atm.repository.TransactionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -13,8 +15,9 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class TransactionServiceImplTest {
     private AccountServiceImpl accountService;
@@ -22,12 +25,13 @@ class TransactionServiceImplTest {
     private TransactionServiceImpl transactionService;
     private ModelMapper mapper;
     private UserServiceImpl userService;
-
+    private TransactionRepository transactionRepository;
     @BeforeEach
     public void setup(){
         accountService = Mockito.mock(AccountServiceImpl.class);
         mapper = Mockito.mock(ModelMapper.class);
         userService = Mockito.mock(UserServiceImpl.class);
+        transactionRepository = Mockito.mock(TransactionRepository.class);
         transactionService = new TransactionServiceImpl(userService,accountService, transactionRepository, mapper);
     }
 
@@ -52,7 +56,9 @@ class TransactionServiceImplTest {
                 .balance(initialBalance)
                 .build();
         TransactionRequest transactionRequest = new TransactionRequest(userId, accountId, withDrawAmount);
+        Transaction transaction = Transaction.builder().build();
 
+        when(transactionRepository.save(any(Transaction.class))).thenReturn(transaction);
         when(userService.getUserById(anyLong())).thenReturn(userResponse);
         when(accountService.getAccountById(anyLong())).thenReturn(accountDto);
 
@@ -62,6 +68,8 @@ class TransactionServiceImplTest {
         assertEquals(userId, result.getUserId());
         assertEquals(accountId, result.getUserId());
         assertEquals(initialBalance.subtract(withDrawAmount), result.getNewBalance());
+
+        verify(transactionRepository, times(1)).save(any(Transaction.class));
     }
 
     @Test
